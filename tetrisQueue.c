@@ -191,6 +191,62 @@ void mostrarPilha(pilha *p) {
     printf("\n");
 }
 
+// --- Troca entre peças da pilha e da fila ---
+
+// Troca entre a primeira peça da fila com a ultima da pilha
+// Troca o primeiro elemento da fila com o topo da pilha
+void trocarFila(fila *f, pilha *p) {
+    if (filaVazia(f)) {
+        printf("Fila vazia! Não é possível trocar.\n");
+        return;
+    }
+    if (pilhaVazia(p)) {
+        printf("Pilha vazia! Não é possível trocar.\n");
+        return;
+    }
+    
+    // Armazena o item a ser trocado
+    Peca tempFila = f->pecas[f->inicio];
+    Peca tempPilha = p->pecas[p->topo];
+    
+    // Troca as peças
+    f->pecas[f->inicio] = tempPilha;
+    p->pecas[p->topo] = tempFila;
+    
+    
+    printf("Troca realizada: [%s, %d] (fila) <-> [%s, %d] (pilha)\n", 
+           tempFila.tipo, tempFila.id, tempPilha.tipo, tempPilha.id);
+}
+
+// Troca os 3 primeiros elementos da fila com a pilha
+void trocarTresFila(fila *f, pilha *p) {
+    if (f->total < 3) {
+        printf("Fila não tem 3 peças! Não é possível trocar.\n");
+        return;
+    }
+    if (p->topo < 2) { // Precisa ter pelo menos 3 elementos na pilha (índices 0,1,2)
+        printf("Pilha não tem 3 peças! Não é possível trocar.\n");
+        return;
+    }
+    
+    printf("Trocando 3 peças:\n");
+    
+    // Troca as 3 peças
+    for (int i = 0; i < 3; i++) {
+        // Armazena o item a ser trocado
+        int indiceFila = (f->inicio + i) % MAX;
+        int indicePilha = p->topo - i; // Do topo para baixo
+        
+        // Troca as peças
+        Peca temp = f->pecas[indiceFila];
+        f->pecas[indiceFila] = p->pecas[indicePilha];
+        p->pecas[indicePilha] = temp;
+        
+        // Imprime a troca
+        printf("[%s, %d] (fila) <-> [%s, %d] (pilha)\n", 
+               temp.tipo, temp.id, p->pecas[indicePilha].tipo, p->pecas[indicePilha].id);
+    }
+}
 
 // Menu de opções
 void exibirMenu(fila *f, pilha *p) {
@@ -203,9 +259,12 @@ void exibirMenu(fila *f, pilha *p) {
     mostrarFila(f);
     do {
         printf("\nMenu de Opções\n");
-        printf("1. Jogar Peça\n");
-        printf("2. Reservar peça\n");
-        printf("3. Usar peça reservada\n");
+        printf("1. Jogar peça da frente da fila\n");
+        printf("2. Enviar peça da fila para a pilha de reserva\n");
+        printf("3. Usar peça da pilha de reserva\n");
+        printf("4. Trocar peça da frente da fila com o topo da pilha\n");
+        printf("5. Trocar os 3 primeiros da fila com as 3 peças da pilha\n");
+        printf("6. Mostrar fila e pilha\n");
         printf("0. Sair\n");
         printf("Escolha uma opção: ");
         scanf("%d", &opcao);
@@ -214,7 +273,7 @@ void exibirMenu(fila *f, pilha *p) {
 
         switch (opcao) {
         case 1:{
-            // joga uma peça da fila removendo ela FIFO
+            // joga uma peça
             Peca jogada;
             jogarPeca(f, &jogada);
             // insere uma nova peça na fila
@@ -234,10 +293,17 @@ void exibirMenu(fila *f, pilha *p) {
             // insere uma peça na pilha que vem do inicio da fila
             Peca pecaPilha;
             inserirPecaPilha(f, p, &pecaPilha);
-
+            if (pilhaCheia(p)){
+                mostrarFila(f);
+                mostrarPilha(p);
+                printf("\n");
+                printf("Pressione Enter para continuar...");
+                getchar();
+                printf("\n");
+                continue;
+            }
             mostrarFila(f);
             mostrarPilha(p);
-
             printf("\n");
             printf("Pressione Enter para continuar...");
             getchar();
@@ -248,6 +314,35 @@ void exibirMenu(fila *f, pilha *p) {
             // remove uma peça da pilha LIFO
             Peca pecaRemovida;
             pop(p, &pecaRemovida);
+            mostrarFila(f);
+            mostrarPilha(p);
+            printf("\n");
+            printf("Pressione Enter para continuar...");
+            getchar();
+            printf("\n");
+            break;
+        }
+        case 4: { 
+            trocarFila(f, p);
+            mostrarFila(f);
+            mostrarPilha(p);
+            printf("\n");
+            printf("Pressione Enter para continuar...");
+            getchar();
+            printf("\n");
+            break;
+        }
+        case 5: {  
+            trocarTresFila(f, p);
+            mostrarFila(f);
+            mostrarPilha(p);
+            printf("\n");
+            printf("Pressione Enter para continuar...");
+            getchar();
+            printf("\n");
+            break;
+        }
+        case 6: {
             mostrarFila(f);
             mostrarPilha(p);
             printf("\n");
