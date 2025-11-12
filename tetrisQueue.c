@@ -22,6 +22,13 @@ typedef struct {
     int total;
 } fila;
 
+// Estrutura da pilha
+typedef struct {
+    Peca pecas[MAX];
+    int topo;
+} pilha;
+
+// --- Funções da fila ---
 // Inicia a fila de peças
 void inicializarFila(fila *f) {
     f->inicio = 0;
@@ -41,6 +48,9 @@ int filaCheia(fila *f) {
 
 // Adiciona um elemento na fila
 void inserirPeca(fila *f, Peca p) {
+    if (filaCheia(f)){ // Impede inserção se estiver cheia
+    return;
+    }
     f->pecas[f->fim] = p; // Insere no final
     f->fim = (f->fim + 1) % MAX; // Lógica circular
     f->total++; // Incrementa a contagem de peças
@@ -48,6 +58,9 @@ void inserirPeca(fila *f, Peca p) {
 
 // joga a primeira peça da fila removendo ela inicio
 void jogarPeca(fila *f, Peca *p) {
+    if (filaVazia(f)){
+        return; // evita executar caso vazia
+    }
        *p = f->pecas[f->inicio]; // Armazena o item a ser removido
     f->inicio = (f->inicio + 1) % MAX; // Atualiza o indice de inicio
     f->total--; // Diminui o total
@@ -97,21 +110,90 @@ void mostrarFila(fila *f) {
         printf("Fila vazia! Sem peças para mostrar.\n");
         return;
     }
-    printf("Peças na fila: ");
+    printf("Peças na fila (inicio -> fim): ");
     for (int i = 0, idx = f->inicio; i < f->total; i++, idx = (idx + 1) % MAX) { // i= tamanho total da fila e idx = indice da fila
         printf("[%s, %d] ", f->pecas[idx].tipo, f->pecas[idx].id); // Imprime o tipo e o id
     }
     printf("\n");
 }
 
-// --- Limpa o buffer do teclado ---
+// Limpa o buffer do teclado 
 void limpaBufferEntrada() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
 }
 
+// ========================== FUNÇÕES DA PILHA ==========================
+
+// Inicializa a pilha
+void inicializarPilha(pilha *p) {
+    p->topo = -1;
+}
+
+// Verifica se a pilha está vazia
+int pilhaVazia(pilha *p) {
+    return p->topo == -1;
+}
+
+// Verifica se a pilha está cheia
+int pilhaCheia(pilha *p) {
+    return p->topo == MAX - 1;
+}
+
+void push(pilha *p, Peca peca) {
+    p->topo++; // Avança o topo
+    p->pecas[p->topo] = peca; // Insere o novo elemento
+}
+
+// Adiciona um elemento na pilha que vem do inicio da fila
+void inserirPecaPilha(fila *f, pilha *p, Peca *peca) {
+    if (filaVazia(f)) {
+        printf("Fila vazia! Não é possível reservar peça.\n");
+        return;
+    }
+    if (pilhaCheia(p)) { 
+        printf("Pilha cheia! Não é possível reservar mais peças.\n");
+        return;
+    }
+    *peca = f->pecas[f->inicio]; // Armazena o item a ser removido
+    f->inicio = (f->inicio + 1) % MAX; // Atualiza o indice de inicio
+    f->total--; // Diminui o total
+    push(p, *peca); // Insere na pilha
+    printf("Peça reservada: [%s, %d]\n", peca->tipo, peca->id);
+
+    // Gerar nova peça para repor na fila
+    Peca novaPeca = gerarPeca();
+    inserirPeca(f, novaPeca);
+    printf("Proxima peça a chegar na fila: [%s, %d]\n", novaPeca.tipo, novaPeca.id);
+}
+
+// Remove um elemento da pilha
+void pop(pilha *p, Peca *peca) {
+    if (pilhaVazia(p)){
+        printf("Pilha vazia! Nao é possivel remover.\n");
+        return; // evita executar caso vazia
+    }
+    *peca = p->pecas[p->topo]; // Armazena o item a ser removido
+    p->topo--; // Diminui o topo
+    printf("Peça removida: [%s, %d]\n", peca->tipo, peca->id);
+}
+
+// Imprime os elementos da pilha
+void mostrarPilha(pilha *p) {
+    if (pilhaVazia(p)){
+        printf("Pilha vazia! Nenhuma peça inserida.\n");
+        return;
+    }
+    printf("Pilha de Peças (topo -> base): ");
+    for (int i = p->topo; i >= 0; i--) {
+        printf("[%s, %d] ", p->pecas[i].tipo, p->pecas[i].id);
+    }
+    printf("\n");
+}
+
+
 // Menu de opções
-void exibirMenu(fila *f) {
+void exibirMenu(fila *f, pilha *p) {
     int opcao;
 
     printf("============================\n");
@@ -121,8 +203,9 @@ void exibirMenu(fila *f) {
     mostrarFila(f);
     do {
         printf("\nMenu de Opções\n");
-        printf("1. Jogar Peça (remover)\n");
-        printf("2. Inserir Nova Peça (adcionar)\n");
+        printf("1. Jogar Peça\n");
+        printf("2. Reservar peça\n");
+        printf("3. Usar peça reservada\n");
         printf("0. Sair\n");
         printf("Escolha uma opção: ");
         scanf("%d", &opcao);
@@ -131,27 +214,43 @@ void exibirMenu(fila *f) {
 
         switch (opcao) {
         case 1:{
-            if (filaVazia(f)){
-                printf("Fila vazia! Não é possivel jogar peça.\n");
-                continue; // Continua para o menu
-            }
+            // joga uma peça da fila removendo ela FIFO
             Peca jogada;
             jogarPeca(f, &jogada);
+            // insere uma nova peça na fila
+            Peca novaPeca = gerarPeca();
+            inserirPeca(f, novaPeca);
+            printf("Proxima peça a chegar na fila: [%s, %d]\n", novaPeca.tipo, novaPeca.id);
+
             mostrarFila(f);
+            mostrarPilha(p);
+            printf("\n");
             printf("Pressione Enter para continuar...");
             getchar();
             printf("\n");
             break;
         }
         case 2: {
-            if (filaCheia(f)){ // Impede inserção se estiver cheia
-                printf("Fila cheia! Não é possivel inserir nova peça.\n");
-                continue;
-            }
-            Peca novaPeca = gerarPeca();
-            inserirPeca(f, novaPeca);
-            printf("Peça adicionada: [%s %d]\n", novaPeca.tipo, novaPeca.id);
+            // insere uma peça na pilha que vem do inicio da fila
+            Peca pecaPilha;
+            inserirPecaPilha(f, p, &pecaPilha);
+
             mostrarFila(f);
+            mostrarPilha(p);
+
+            printf("\n");
+            printf("Pressione Enter para continuar...");
+            getchar();
+            printf("\n");
+            break;
+        }
+        case 3: {
+            // remove uma peça da pilha LIFO
+            Peca pecaRemovida;
+            pop(p, &pecaRemovida);
+            mostrarFila(f);
+            mostrarPilha(p);
+            printf("\n");
             printf("Pressione Enter para continuar...");
             getchar();
             printf("\n");
@@ -160,7 +259,6 @@ void exibirMenu(fila *f) {
         case 0:
             printf("Saindo...\n");
             break;
-        
         default:
             printf("Opção inválida!\n");
         }
@@ -169,12 +267,13 @@ void exibirMenu(fila *f) {
 
 int main() {
     fila f;
-    Peca p;
+    pilha p;
     // Inicializa o gerador de números aleatórios
     srand(time(NULL));
 
     inicializarFila(&f);
+    inicializarPilha(&p);
     gerarPrimeirasPecas(&f);
-    exibirMenu(&f);
+    exibirMenu(&f, &p);
     return 0;
 }
